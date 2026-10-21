@@ -4,11 +4,15 @@
 
 **A free, phone-based photobooth for the GDGoC NUST Onboarding Orientation.**
 Four photos, a countdown, a branded photo strip, and three ways to take it home. No backend, no app install, no cost.
+>Try it for yourself [Live Link](https://gdg-photobooth.vercel.app/)
+
+---
 
 ![Static site](https://img.shields.io/badge/backend-none-34A853?style=flat-square)
 ![PWA](https://img.shields.io/badge/PWA-installable-4285F4?style=flat-square)
 ![Cost](https://img.shields.io/badge/cost-%240-FBBC04?style=flat-square)
 ![Vanilla JS](https://img.shields.io/badge/vanilla-HTML%20%C2%B7%20CSS%20%C2%B7%20JS-EA4335?style=flat-square)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 <img src="docs/hero.png" alt="Start screen, countdown, result screen and both strip styles" width="100%">
 
