@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--DEPLOY-HEAD-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#fbf8f1">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!--/DEPLOY-HEAD-->
+<title>GDGoC Photobooth</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one full-screen panel at a time (attract → booth → developing → result), paper by day, ink viewfinder in the booth. */
+:root {
+  --paper: #fbf8f1;
+  --paper-2: #f2ede1;
+  --line: #ddd4c2;
+  --ink: #18191d;
+  --ink-2: #2a2b31;
+  --muted: #6c6556;
+  --blue: #1a73e8;
+  --red: #d93025;
+  --yellow: #f9ab00;
+  --green: #188038;
+  --strip-blue: #185abc;
+  --on-dark: #f6f3ec;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--display); font-size: 16px; line-height: 1.4;
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+  touch-action: manipulation; overscroll-behavior: none; overflow: hidden;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.mono { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+
+.screen {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.gbar { display: flex; height: 6px; margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); flex: none; }
+.gbar i { flex: 1; } .gbar i:nth-child(1){background:var(--blue)} .gbar i:nth-child(2){background:var(--red)} .gbar i:nth-child(3){background:var(--yellow)} .gbar i:nth-child(4){background:var(--green)}
+
+/* ---------- Attract ---------- */
+#attract { gap: 18px; }
+.top { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; }
+.dots { display: flex; gap: 6px; padding: 10px; margin: -10px; }
+.dots i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+.dots i:nth-child(1){background:var(--blue)} .dots i:nth-child(2){background:var(--red)} .dots i:nth-child(3){background:var(--yellow)} .dots i:nth-child(4){background:var(--green)}
+.attract-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0; }
+.headline { font-size: clamp(52px, 17vw, 112px); line-height: .86; font-weight: 800; letter-spacing: -.035em; margin: 0; font-variation-settings: "opsz" 96; text-wrap: balance; }
+.headline span { color: var(--blue); }
+.mini-vf {
+  position: relative; width: 100%; max-width: 520px; aspect-ratio: 5 / 4; max-height: 34vh;
+  border-radius: 14px; overflow: hidden; background: var(--ink); align-self: flex-start;
+  box-shadow: 0 0 0 6px var(--paper), 0 0 0 7px var(--line);
+}
+.mini-vf video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mini-vf .placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--on-dark); text-align: center; padding: 16px; }
+.top-logo { height: 64px; width: auto; display: block; }
+.picker { display: flex; flex-direction: column; gap: 10px; }
+.pick-label { color: var(--muted); }
+.pick-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pick {
+  display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 96px; padding: 14px 16px;
+  border-radius: 22px; background: var(--ink); color: var(--on-dark); text-align: left;
+  box-shadow: 0 9px 0 -3px var(--blue); animation: nudge 2.4s ease-in-out infinite;
+}
+.pick-blue { background: var(--strip-blue); box-shadow: 0 9px 0 -3px var(--yellow); animation-delay: 1.2s; }
+.pick > svg { width: 26px; height: 26px; flex: none; margin-left: auto; }
+.pick-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pick-text b { font-size: 24px; font-weight: 750; letter-spacing: -.01em; line-height: 1.05; }
+.pick-text small { font-size: 13px; opacity: .78; line-height: 1.25; }
+.pick:active { transform: scale(.97); }
+.swatch { width: 30px; height: 66px; flex: none; box-sizing: border-box; border-radius: 4px; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+.swatch i { flex: 1; border-radius: 2px; }
+.swatch b { height: 6px; border-radius: 1px; }
+.sw-classic { background: var(--paper); }
+.sw-classic i { background: #b9b1a0; }
+.sw-classic b { background: linear-gradient(90deg, var(--blue) 25%, var(--red) 25% 50%, var(--yellow) 50% 75%, var(--green) 75%); }
+.sw-blue { border: 3px solid transparent; padding: 2px;
+  background: linear-gradient(var(--strip-blue), var(--strip-blue)) padding-box,
+              linear-gradient(90deg, #4285F4 25%, #EA4335 25% 50%, #FBBC04 50% 75%, #34A853 75%) border-box; }
+.sw-blue i { background: #fff; }
+.sw-blue b { background: #fff; }
+@keyframes nudge { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+@media (max-width: 420px) { .pick > svg { display: none; } .pick { padding: 12px; gap: 10px; } .pick-text b { font-size: 21px; } }
+.meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); padding-bottom: 18px; flex-wrap: wrap; }
+
+/* ---------- Booth ---------- */
+#booth { background: var(--ink); color: var(--on-dark); gap: 14px; align-items: center; justify-content: center; }
+.booth-top { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: center; }
+.icon-btn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.1); }
+.icon-btn svg { width: 22px; height: 22px; }
+.hint { color: var(--yellow); text-align: center; }
+.vf {
+  position: relative; width: min(100%, calc((100dvh - 230px) * 1.25)); aspect-ratio: 5 / 4;
+  border-radius: 16px; overflow: hidden; background: #000;
+}
+.vf video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mirror { transform: scaleX(-1); }
+.count {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+  font-size: min(46vw, 40vh); font-weight: 800; line-height: 1; color: #fff;
+  text-shadow: 0 6px 40px rgba(0,0,0,.45); font-variation-settings: "opsz" 96;
+}
+.count.pop { animation: pop .9s cubic-bezier(.2,.8,.2,1); }
+@keyframes pop { 0% { transform: scale(1.35); opacity: 0 } 18% { opacity: 1 } 100% { transform: scale(.9); opacity: .85 } }
+.cam-error { position: absolute; inset: 0; display: grid; place-items: center; background: var(--ink-2); padding: 20px; text-align: center; }
+.cam-error p { margin: 0 0 14px; max-width: 34ch; }
+.thumbs { display: flex; gap: 8px; justify-content: center; }
+.thumb { width: 64px; aspect-ratio: 5/4; border-radius: 6px; border: 1.5px dashed rgba(255,255,255,.3); overflow: hidden; }
+.thumb canvas { width: 100%; height: 100%; display: block; }
+.thumb.done { border: 2px solid var(--on-dark); animation: land .35s ease-out; }
+@keyframes land { from { transform: translateY(-16px) scale(1.2) } to { transform: none } }
+#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 50; }
+#flash.on { animation: flash .45s ease-out; }
+@keyframes flash { 0% { opacity: 1 } 100% { opacity: 0 } }
+
+/* ---------- Developing ---------- */
+#developing { align-items: center; justify-content: center; gap: 18px; text-align: center; }
+.loader { display: flex; gap: 16px; height: 64px; align-items: flex-end; }
+.loader i { width: 24px; height: 24px; border-radius: 50%; display: block; animation: hop 1.1s ease-in-out infinite; }
+.loader i:nth-child(1) { background: var(--blue); }
+.loader i:nth-child(2) { background: var(--red); animation-delay: .12s; }
+.loader i:nth-child(3) { background: var(--yellow); animation-delay: .24s; }
+.loader i:nth-child(4) { background: var(--green); animation-delay: .36s; }
+@keyframes hop { 0%, 70%, 100% { transform: translateY(0) } 35% { transform: translateY(-34px) } }
+#developing h2 { margin: 0; font-size: 30px; font-weight: 750; }
+
+/* ---------- Result ---------- */
+#result { gap: 14px; }
+.result-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 18px; align-items: center; padding-block: 8px; }
+.strip-wrap { height: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.strip-wrap img { max-height: 100%; max-width: 100%; display: block; border-radius: 4px; box-shadow: 0 1px 0 var(--line), 0 18px 36px -18px rgba(24,25,29,.45); transform: rotate(-2deg); }
+.actions { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.actions h2 { margin: 0 0 2px; font-size: clamp(24px, 7vw, 36px); line-height: 1; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+.btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 16px; border-radius: 14px; font-size: 17px; font-weight: 650; text-align: left; min-height: 56px; }
+.btn svg { width: 22px; height: 22px; flex: none; }
+.btn.primary { background: var(--blue); color: #fff; }
+.btn.green { background: var(--green); color: #fff; }
+.btn.outline { background: var(--paper); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.btn.dark { background: var(--ink); color: var(--on-dark); justify-content: center; }
+.btn:active { transform: scale(.98); }
+.btn[disabled] { opacity: .45; }
+.qr { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 14px; background: var(--paper-2); min-height: 92px; }
+.qr canvas { width: 76px; height: 76px; flex: none; image-rendering: pixelated; background: #fff; border-radius: 6px; }
+.qr .qr-text { font-size: 13px; color: var(--muted); line-height: 1.3; min-width: 0; }
+.qr .qr-text b { display: block; color: var(--ink); font-size: 15px; }
+.result-foot { display: flex; gap: 10px; padding-bottom: 14px; }
+.result-foot .btn { justify-content: center; }
+.result-foot .retake { flex: 0 0 auto; width: auto; padding-inline: 20px; }
+
+/* ---------- Sheets, toast, banners ---------- */
+.scrim { position: fixed; inset: 0; background: rgba(24,25,29,.5); z-index: 30; display: flex; align-items: flex-end; }
+.sheet {
+  width: 100%; background: var(--paper); border-radius: 22px 22px 0 0;
+  padding-top: 22px; padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px; max-height: 92dvh; overflow-y: auto;
+  animation: up .25s ease-out;
+}
+@keyframes up { from { transform: translateY(40px); opacity: 0 } }
+.sheet h3 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.015em; }
+.sheet label { color: var(--muted); }
+.sheet input[type=email] {
+  width: 100%; box-sizing: border-box; font: 500 20px var(--display); padding: 16px; border-radius: 14px;
+  border: 2px solid var(--line); background: #fff; color: var(--ink); -webkit-user-select: text; user-select: text;
+}
+.sheet input[type=email]:focus { border-color: var(--blue); outline: none; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { padding: 10px 14px; border-radius: 999px; background: var(--paper-2); font: 500 14px var(--mono); }
+.row { display: flex; gap: 10px; }
+.row .btn { justify-content: center; }
+.fine { font-size: 13px; color: var(--muted); margin: 0; }
+.status { font-size: 15px; margin: 0; min-height: 1.4em; }
+.status.ok { color: var(--green); } .status.err { color: var(--red); }
+
+#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--ink); color: var(--on-dark); padding: 12px 18px; border-radius: 12px; font-size: 15px; opacity: 0; transition: .25s; z-index: 60; max-width: calc(100% - 32px); pointer-events: none; }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+#resetBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--yellow); color: var(--ink); text-align: center; font-weight: 650; padding-top: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.demo-flag { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 50%; transform: translateX(-50%); z-index: 45; background: var(--red); color: #fff; padding: 4px 8px; border-radius: 6px; pointer-events: none; font-size: 10px; }
+
+.admin h3 { display: flex; justify-content: space-between; align-items: center; }
+.field { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.seg { display: flex; background: var(--paper-2); border-radius: 10px; padding: 3px; }
+.seg button { padding: 8px 12px; border-radius: 8px; font: 500 14px var(--mono); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-dark); }
+
+/* Wide screens: headline + Start on the left, live camera preview on the right */
+@media (orientation: landscape) and (min-width: 760px) and (min-height: 521px) {
+  .attract-body {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto; column-gap: clamp(24px, 4vw, 64px); row-gap: 32px; align-content: center;
+  }
+  .headline { grid-column: 1; grid-row: 1; align-self: end; font-size: clamp(64px, 9vw, 160px); }
+  .picker { grid-column: 1; grid-row: 2; align-self: start; }
+  .mini-vf {
+    grid-column: 2; grid-row: 1 / span 2; align-self: center; justify-self: end;
+    width: min(calc(100% - 14px), calc(min(62vh, 560px) * 1.25)); height: auto; max-height: none; max-width: none; margin-right: 7px;
+  }
+}
+
+/* Short portrait phones: drop the preview so the strip buttons stay on screen */
+@media (orientation: portrait) and (max-height: 700px) {
+  .mini-vf { display: none; }
+  .attract-body { gap: 18px; }
+}
+@media (orientation: portrait) { .mini-vf { max-height: 30vh; } }
+
+/* Phones held sideways */
+@media (orientation: landscape) and (max-height: 520px) {
+  #attract { gap: 8px; }
+  .top { padding-top: 8px; }
+  .top-logo { height: 36px; }
+  .meta { padding-bottom: 8px; }
+  .mini-vf { display: none; }
+  .attract-body {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 24px; align-items: center; align-content: center;
+  }
+  .headline { font-size: clamp(44px, 15vh, 84px); }
+  .pick-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .pick { min-height: 64px; padding: 10px 16px; }
+  .pick > svg { display: block; }
+  .swatch { height: 46px; width: 22px; padding: 3px; gap: 2px; }
+
+  #booth { flex-direction: row; gap: 16px; }
+  #booth .hint { display: none; }
+  .vf { width: min(calc(100% - 100px), calc((100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) * 1.25)); }
+  .thumbs { flex-direction: column; }
+  .thumb { width: 58px; }
+  .booth-top { top: calc(env(safe-area-inset-top, 0px) + 8px); }
+
+  #developing { gap: 10px; }
+
+  #result { gap: 6px; }
+  .result-body { grid-template-columns: minmax(0, 20%) minmax(0, 1fr); padding-block: 6px; gap: 16px; }
+  .strip-wrap img { transform: rotate(-1.5deg); }
+  .actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-content: center; }
+  .actions h2 { grid-column: 1 / -1; font-size: 24px; }
+  .btn { min-height: 48px; padding: 10px 14px; font-size: 16px; }
+  .qr { min-height: 0; padding: 6px 8px; }
+  .qr canvas { width: 56px; height: 56px; }
+  .result-foot { padding-bottom: 8px; }
+  .result-foot .btn { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== ATTRACT ===================== -->
+<section class="screen" id="attract">
+  <div class="gbar"><i></i><i></i><i></i><i></i></div>
+  <div class="top">
+    <img class="top-logo" id="topLogo" alt="GDGoC NUST" hidden>
+    <span class="mono" id="eyebrow">GDGoC NUST · Onboarding</span>
+    <span class="dots" id="adminMark" aria-label="Hold for booth settings"><i></i><i></i><i></i><i></i></span>
+  </div>
+  <div class="attract-body">
+    <h1 class="headline">Strike a<br><span>pose.</span></h1>
+    <div class="mini-vf" id="miniVf">
+      <video id="miniVideo" playsinline muted autoplay></video>
+      <div class="placeholder mono" id="miniPh">Camera starts when you pick a strip</div>
+    </div>
+    <div class="picker">
+      <span class="mono pick-label">Pick your strip to start</span>
+      <div class="pick-row">
+        <button class="pick" data-style="classic" aria-label="Start with the Classic strip">
+          <span class="swatch sw-classic"><i></i><i></i><i></i><b></b></span>
+          <span class="pick-text"><b>Classic</b><small>Cream film strip</small></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <button class="pick pick-blue" data-style="blue" aria-label="Start with the Blue strip">
+          <span class="swatch sw-blue"><i></i><i></i><i></i><b></b></span>
+          <span class="pick-text"><b>Blue</b><small>Google colour border</small></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="meta mono"><span id="metaShots">4 shots · 3 sec timer</span><span>Free photo strip</span></div>
+</section>
+
+<!-- ===================== BOOTH ===================== -->
+<section class="screen" id="booth" hidden>
+  <div class="booth-top">
+    <span class="mono" id="shotLabel">Get ready</span>
+    <button class="icon-btn" id="cancelBtn" aria-label="Cancel and start over">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="hint mono" id="hint">↑ Look at the camera, not the screen ↑</div>
+  <div class="vf">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="count" id="count"></div>
+    <div class="cam-error" id="camError" hidden>
+      <div>
+        <p id="camErrorMsg">Camera access is blocked.</p>
+        <div class="row">
+          <button class="btn dark" id="camRetry">Try again</button>
+          <button class="btn outline" id="camTest" style="color:var(--ink)">Use test pattern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="thumbs" id="thumbs"></div>
+</section>
+
+<!-- ===================== DEVELOPING ===================== -->
+<section class="screen" id="developing" hidden>
+  <div class="loader" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <h2>Developing your strip…</h2>
+  <span class="mono" style="color:var(--muted)">Hold tight, two seconds</span>
+</section>
+
+<!-- ===================== RESULT ===================== -->
+<section class="screen" id="result" hidden>
+  <div class="gbar"><i></i><i></i><i></i><i></i></div>
+  <div class="result-body">
+    <div class="strip-wrap"><img id="stripImg" alt="Your photo strip"></div>
+    <div class="actions">
+      <h2>Your strip is ready.</h2>
+      <button class="btn primary" id="emailBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        Email it to me
+      </button>
+      <button class="btn green" id="shareBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+        WhatsApp / Share
+      </button>
+      <button class="btn outline" id="downloadBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+        Download
+      </button>
+      <div class="qr" id="qrBox">
+        <canvas id="qrCanvas" width="76" height="76" hidden></canvas>
+        <div class="qr-text" id="qrText"><b>Scan to save</b>Preparing your link…</div>
+      </div>
+    </div>
+  </div>
+  <div class="result-foot">
+    <button class="btn outline retake" id="retakeBtn">Retake</button>
+    <button class="btn dark" id="doneBtn">Done · next person</button>
+  </div>
+</section>
+
+<!-- ===================== EMAIL SHEET ===================== -->
+<div class="scrim" id="emailSheet" hidden>
+  <form class="sheet" id="emailForm" novalidate>
+    <h3>Where should we send it?</h3>
+    <label class="mono" for="email">Your email</label>
+    <input type="email" id="email" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="name@seecs.edu.pk" enterkeyhint="send">
+    <div class="chips" id="chips"></div>
+    <p class="status" id="emailStatus" aria-live="polite"></p>
+    <div class="row">
+      <button type="button" class="btn outline" id="emailCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="emailSend" style="justify-content:center">Send</button>
+    </div>
+    <p class="fine">We only use your address to send this photo. It isn't saved on this phone.</p>
+  </form>
+</div>
+
+<!-- ===================== ADMIN SHEET ===================== -->
+<div class="scrim" id="adminSheet" hidden>
+  <div class="sheet admin">
+    <h3>Booth settings <button class="icon-btn" id="adminClose" aria-label="Close settings" style="background:var(--paper-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h3>
+    <div class="field"><span>Photos per strip</span><div class="seg" data-key="shots"><button data-v="3">3</button><button data-v="4">4</button></div></div>
+    <div class="field"><span>Countdown</span><div class="seg" data-key="countdown"><button data-v="3">3s</button><button data-v="5">5s</button><button data-v="10">10s</button></div></div>
+    <div class="field"><span>Camera</span><div class="seg" data-key="facing"><button data-v="user">Front</button><button data-v="environment">Back</button></div></div>
+    <div class="field"><span>Beeps</span><div class="seg" data-key="sound"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+    <div class="field"><span>Test pattern instead of camera</span><div class="seg" data-key="testPattern"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+    <div class="field"><span id="queueInfo">Unsent emails: 0</span><button class="chip" id="flushBtn">Retry now</button></div>
+    <div class="field"><span class="mono" id="configInfo"></span></div>
+    <div class="row">
+      <button class="btn outline" id="fullscreenBtn">Fullscreen</button>
+      <button class="btn dark" id="reloadBtn">Reload app</button>
+    </div>
+    <p class="fine">Hold the four dots on the start screen for 1.5 seconds to open this panel.</p>
+  </div>
+</div>
+
+<div id="resetBar" hidden>Starting over in <span id="resetN">10</span>s · tap anywhere to stay</div>
+<div id="flash"></div>
+<div id="toast" role="status"></div>
+<div class="demo-flag mono" id="demoFlag" hidden>Demo mode</div>
+
+<script src="qrcode.js"></script>
+<script>
+/* =====================================================================
+   CONFIG — everything you'll customise lives here.
+   ===================================================================== */
+const CONFIG = {
+  eventName: "GDGoC NUST",
+  eventSub: "Onboarding Orientation",
+  eventPlace: "NUST · H-12",
+  hashtag: "#GDGoCNUST",
+  logo: "brand/logo.png",   // PNG with a transparent background. Empty = four coloured dots instead.
+  shots: 4,                 // default photos per strip (3 or 4); operators can change it in the settings panel
+  countdown: 3,             // seconds before each photo
+  camera: "user",           // "user" = front camera (people see themselves), "environment" = back camera
+  autoResetSeconds: 90,     // result screen returns to start after this much inactivity
+  emailDomains: ["@seecs.edu.pk", "@gmail.com", "@nust.edu.pk"],
+  colors: { paper: "#fbf8f1", ink: "#18191d", muted: "#8a8270", sprocket: "#ece5d4", stripBlue: "#185abc",
+            blue: "#4285F4", red: "#EA4335", yellow: "#FBBC04", green: "#34A853" },
+
+  // Free image hosting: Cloudinary unsigned upload (see README). Needed for email + QR.
+  cloudinary: { cloudName: "dnvdtq7qj", uploadPreset: "gdgoc-photobooth", folder: "gdgoc-photobooth" },
+
+  // EmailJS free accounts (200 emails/month each). Add a second account to double the quota;
+  // the app falls through to the next one if one fails.
+  emailjs: [
+    { publicKey: "D3sY6n1NRcfb17Txf", serviceId: "service_0cezfel", templateId: "template_fo1wymp" },
+  ],
+};
+
+/* ===================================================================== */
+const $ = (s) => document.querySelector(s);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("pb:" + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("pb:" + k, JSON.stringify(v)); } catch {} },
+};
+const settings = Object.assign(
+  { shots: CONFIG.shots, countdown: CONFIG.countdown, facing: CONFIG.camera, sound: true, testPattern: false },
+  store.get("settings", {})
+);
+const cloudReady = () => !!(CONFIG.cloudinary.cloudName && CONFIG.cloudinary.uploadPreset);
+const emailAccounts = () => CONFIG.emailjs.filter((a) => a.publicKey && a.serviceId && a.templateId);
+const DEMO = !cloudReady() || emailAccounts().length === 0;
+
+let current = "attract", stripStyle = "classic", session = 0, stream = null, shots = [];
+let stripBlob = null, stripObjUrl = null, stripUrl = null, uploadPromise = null;
+let testTimer = null;
+
+function show(id) {
+  document.querySelectorAll(".screen").forEach((s) => (s.hidden = s.id !== id));
+  current = id;
+}
+let toastT;
+function toast(msg, ms = 3200) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), ms);
+}
+
+/* ---------- Fonts (canvas needs them loaded before drawing) ---------- */
+const fontsReady = Promise.race([
+  Promise.all([
+    document.fonts?.load('800 96px "Bricolage Grotesque"'),
+    document.fonts?.load('500 40px "Bricolage Grotesque"'),
+    document.fonts?.load('500 26px "DM Mono"'),
+  ]).catch(() => {}),
+  sleep(2500),
+]);
+
+/* ---------- Logo ---------- */
+let logoImg = null;
+if (CONFIG.logo) {
+  const im = new Image();
+  im.onload = () => { logoImg = im; const t = $("#topLogo"); t.src = im.src; t.hidden = false; $("#eyebrow").hidden = true; };
+  im.src = CONFIG.logo;
+}
+
+/* ---------- Sound ---------- */
+let actx = null;
+function audio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} } return actx; }
+function beep(freq = 784, dur = 0.12) {
+  if (!settings.sound) return; const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.frequency.value = freq; o.type = "sine"; g.gain.setValueAtTime(0.25, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + dur);
+}
+function shutter() {
+  if (!settings.sound) return; const a = audio(); if (!a) return;
+  const len = a.sampleRate * 0.12, buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  const s = a.createBufferSource(), g = a.createGain(); g.gain.value = 0.5;
+  s.buffer = buf; s.connect(g).connect(a.destination); s.start();
+}
+
+/* ---------- Screen wake lock ---------- */
+let wakeLock = null;
+async function keepAwake() { try { if (navigator.wakeLock && !wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => (wakeLock = null)); } } catch {} }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { keepAwake(); if (current !== "attract" || stream) startCamera(true); } });
+
+/* ---------- Camera ---------- */
+const video = $("#video"), miniVideo = $("#miniVideo");
+function streamLive() { return stream && stream.getVideoTracks().some((t) => t.readyState === "live"); }
+function attach() {
+  const mirror = settings.facing === "user" && !settings.testPattern;
+  for (const v of [video, miniVideo]) {
+    if (v.srcObject !== stream) v.srcObject = stream;
+    v.classList.toggle("mirror", mirror);
+    v.play?.().catch(() => {});
+  }
+  $("#miniPh").hidden = true;
+}
+function stopCamera() {
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+  stream = null; clearInterval(testTimer); testTimer = null;
+}
+function startTestPattern() {
+  const c = document.createElement("canvas"); c.width = 1280; c.height = 960;
+  const g = c.getContext("2d"); const C = CONFIG.colors; let t = 0;
+  const draw = () => {
+    t += 1;
+    g.fillStyle = "#2a2b31"; g.fillRect(0, 0, c.width, c.height);
+    [C.blue, C.red, C.yellow, C.green].forEach((col, i) => {
+      g.fillStyle = col; g.beginPath();
+      g.arc(640 + Math.cos(t / 25 + i * 1.57) * 300, 480 + Math.sin(t / 19 + i * 1.57) * 220, 120, 0, 7); g.fill();
+    });
+    g.fillStyle = "#fff"; g.font = '700 64px system-ui, sans-serif'; g.textAlign = "center";
+    g.fillText("TEST PATTERN", 640, 470); g.font = '500 40px ui-monospace, monospace';
+    g.fillText(new Date().toLocaleTimeString(), 640, 530);
+  };
+  draw(); testTimer = setInterval(draw, 1000 / 30);
+  stream = c.captureStream ? c.captureStream(30) : null;
+  if (!stream) throw new Error("This browser can't run the test pattern.");
+  stream._facing = "test"; attach();
+}
+async function startCamera(silent = false) {
+  $("#camError").hidden = true;
+  const want = settings.testPattern ? "test" : settings.facing;
+  if (streamLive() && stream._facing === want) { attach(); return true; }
+  stopCamera();
+  try {
+    if (settings.testPattern) { startTestPattern(); return true; }
+    if (!window.isSecureContext) throw Object.assign(new Error(), { name: "Insecure" });
+    if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error(), { name: "NoApi" });
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: settings.facing, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false,
+    });
+    stream._facing = want; attach(); return true;
+  } catch (e) {
+    if (!silent) camError(e);
+    return false;
+  }
+}
+function camError(e) {
+  const msgs = {
+    NotAllowedError: "Camera access is blocked. Allow the camera for this site in your browser's site settings, then tap Try again.",
+    NotFoundError: "No camera was found on this device.",
+    NotReadableError: "Another app is using the camera. Close it, then tap Try again.",
+    Insecure: "The camera only works over HTTPS. Open the Vercel link instead of a local file.",
+    NoApi: "This browser can't use the camera. Use Chrome on Android or Safari on iPhone.",
+  };
+  $("#camErrorMsg").textContent = msgs[e.name] || "The camera couldn't start (" + (e.name || e.message) + "). Tap Try again.";
+  $("#camError").hidden = false;
+}
+function waitVideo(v) {
+  return new Promise((res) => {
+    if (v.readyState >= 2 && v.videoWidth) return res();
+    const done = () => { v.removeEventListener("loadeddata", done); res(); };
+    v.addEventListener("loadeddata", done); setTimeout(done, 4000);
+  });
+}
+
+/* ---------- Capture ---------- */
+const ASPECT = 5 / 4;
+function grab(v) {
+  const vw = v.videoWidth, vh = v.videoHeight;
+  let sw = vw, sh = vw / ASPECT; if (sh > vh) { sh = vh; sw = vh * ASPECT; }
+  const sx = (vw - sw) / 2, sy = (vh - sh) / 2;
+  const outW = Math.min(1440, Math.round(sw)), outH = Math.round(outW / ASPECT);
+  const c = document.createElement("canvas"); c.width = outW; c.height = outH;
+  const g = c.getContext("2d");
+  if (v.classList.contains("mirror")) { g.translate(outW, 0); g.scale(-1, 1); }
+  g.drawImage(v, sx, sy, sw, sh, 0, 0, outW, outH);
+  return c;
+}
+function renderThumbs() {
+  const box = $("#thumbs"); box.innerHTML = "";
+  for (let i = 0; i < settings.shots; i++) {
+    const d = document.createElement("div"); d.className = "thumb" + (shots[i] ? " done" : "");
+    if (shots[i]) { const c = document.createElement("canvas"); c.width = 160; c.height = 128; c.getContext("2d").drawImage(shots[i], 0, 0, 160, 128); d.appendChild(c); }
+    box.appendChild(d);
+  }
+}
+function showCount(n) { const el = $("#count"); el.textContent = n; el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+function flash() { const f = $("#flash"); f.classList.remove("on"); void f.offsetWidth; f.classList.add("on"); }
+
+/* ---------- Strip composition ---------- */
+function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function fitFont(g, text, weight, size, family, maxW) {
+  do { g.font = `${weight} ${size}px ${family}`; size -= 2; } while (g.measureText(text).width > maxW && size > 20);
+}
+const STRIP_STYLES = {
+  classic: { bg: "paper", border: 0, margin: 72, gap: 30, top: 110, headY: 76, mat: 0, radius: 12,
+             head: "muted", title: "ink", sub: "ink", meta: "muted", logoCard: false, sprockets: true, bars: true },
+  blue:    { bg: "stripBlue", border: 28, margin: 100, gap: 44, top: 160, headY: 114, mat: 12, radius: 10,
+             head: "#d2e3fc", title: "#ffffff", sub: "#e8f0fe", meta: "#c6dafc", logoCard: true, sprockets: false, bars: false },
+};
+function drawStrip(imgs, styleName = "classic") {
+  const C = CONFIG.colors, S = STRIP_STYLES[styleName] || STRIP_STYLES.classic, n = imgs.length;
+  const col = (k) => C[k] || k;
+  const W = 1080, M = S.margin, PW = W - 2 * M, PH = Math.round(PW / ASPECT), GAP = S.gap, TOP = S.top;
+  const LH = 190, logoW = logoImg ? Math.min(PW - (S.logoCard ? 64 : 0), (logoImg.width / logoImg.height) * LH) : 0;
+  const logoH = logoImg ? logoW / (logoImg.width / logoImg.height) : 0;
+  const logoBlock = logoImg ? logoH + (S.logoCard ? 48 : 0) + 34 : 70;
+  const photosEnd = TOP + n * PH + (n - 1) * GAP;
+  const H = Math.round(photosEnd + 64 + logoBlock + 230 + S.border + 40);
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  const DISPLAY = '"Bricolage Grotesque", "Segoe UI", sans-serif', MONO = '"DM Mono", ui-monospace, monospace';
+  const google = [C.blue, C.red, C.yellow, C.green];
+
+  g.fillStyle = col(S.bg); g.fillRect(0, 0, W, H);
+
+  if (S.bars) google.forEach((cl, i) => { g.fillStyle = cl; g.fillRect((i * W) / 4, 0, W / 4 + 1, 16); g.fillRect((i * W) / 4, H - 16, W / 4 + 1, 16); });
+
+  if (S.border) {
+    // Google-colour border running round the whole strip
+    const B = S.border, seg = 120; let k = 0;
+    const paint = (x, y, w, h) => { g.fillStyle = google[k++ % 4]; g.fillRect(x, y, w, h); };
+    for (let x = 0; x < W; x += seg) paint(x, 0, Math.min(seg, W - x), B);
+    for (let y = B; y < H; y += seg) paint(W - B, y, B, Math.min(seg, H - y));
+    for (let x = W - B; x > 0; x -= seg) paint(Math.max(0, x - seg), H - B, Math.min(seg, x), B);
+    for (let y = H - B; y > B; y -= seg) paint(0, Math.max(B, y - seg), B, Math.min(seg, y - B));
+    g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 3;
+    rr(g, B + 16, B + 16, W - 2 * B - 32, H - 2 * B - 32, 22); g.stroke();
+  }
+
+  if (S.sprockets) {
+    g.fillStyle = C.sprocket;
+    for (let y = TOP; y < photosEnd - 20; y += 62) { rr(g, 22, y, 26, 36, 7); g.fill(); rr(g, W - 48, y, 26, 36, 7); g.fill(); }
+  }
+
+  // header line
+  const count = store.get("count", 0) + 1; store.set("count", count);
+  g.fillStyle = col(S.head); g.font = `500 26px ${MONO}`; g.textBaseline = "alphabetic";
+  g.textAlign = "left"; g.fillText(CONFIG.eventName.toUpperCase(), M, S.headY);
+  g.textAlign = "right"; g.fillText("STRIP Nº " + String(count).padStart(3, "0"), W - M, S.headY);
+
+  // photos
+  imgs.forEach((im, i) => {
+    const y = TOP + i * (PH + GAP);
+    if (S.mat) { g.fillStyle = "#ffffff"; rr(g, M - S.mat, y - S.mat, PW + 2 * S.mat, PH + 2 * S.mat, S.radius + S.mat); g.fill(); }
+    g.save(); rr(g, M, y, PW, PH, S.radius); g.clip();
+    g.drawImage(im, 0, 0, im.width, im.height, M, y, PW, PH);
+    g.restore();
+  });
+
+  // footer
+  g.textAlign = "center";
+  let fy = photosEnd + 64;
+  if (logoImg) {
+    if (S.logoCard) {
+      const cw = logoW + 64, ch = logoH + 48;
+      g.fillStyle = "#ffffff"; rr(g, (W - cw) / 2, fy, cw, ch, 26); g.fill();
+      g.drawImage(logoImg, (W - logoW) / 2, fy + 24, logoW, logoH);
+    } else {
+      g.drawImage(logoImg, (W - logoW) / 2, fy, logoW, logoH);
+    }
+  } else {
+    google.forEach((cl, i) => { g.fillStyle = cl; g.beginPath(); g.arc(W / 2 - 84 + i * 56, fy + 20, 18, 0, 7); g.fill(); });
+  }
+  fy += logoBlock;
+  g.fillStyle = col(S.title); fitFont(g, CONFIG.eventName, 800, 104, DISPLAY, PW);
+  g.fillText(CONFIG.eventName, W / 2, fy + 90);
+  g.fillStyle = col(S.sub); fitFont(g, CONFIG.eventSub, 500, 44, DISPLAY, PW);
+  g.fillText(CONFIG.eventSub, W / 2, fy + 152);
+  const d = new Date(), date = [d.getDate(), d.getMonth() + 1, d.getFullYear()].map((x) => String(x).padStart(2, "0")).join(".");
+  const meta = `${date} · ${CONFIG.eventPlace} · ${CONFIG.hashtag}`;
+  g.fillStyle = col(S.meta); fitFont(g, meta, 500, 26, MONO, PW);
+  g.fillText(meta, W / 2, fy + 208);
+  return c;
+}
+
+/* ---------- Session ---------- */
+async function runSession() {
+  const my = ++session; shots = []; renderThumbs();
+  $("#count").textContent = ""; $("#shotLabel").textContent = "Get ready";
+  show("booth"); audio(); keepAwake();
+  const ok = await startCamera(); if (!ok || my !== session) return;
+  await waitVideo(video); await sleep(600);
+  for (let i = 0; i < settings.shots; i++) {
+    if (my !== session) return;
+    $("#shotLabel").textContent = `Photo ${i + 1} of ${settings.shots}`;
+    for (let s = settings.countdown; s > 0; s--) {
+      if (my !== session) return;
+      showCount(s); beep(s === 1 ? 1046 : 784); await sleep(1000);
+    }
+    if (my !== session) return;
+    $("#count").textContent = ""; flash(); shutter();
+    shots.push(grab(video)); renderThumbs();
+    if (i < settings.shots - 1) { $("#shotLabel").textContent = "Nice! Next one…"; await sleep(1100); }
+  }
+  await sleep(500); if (my !== session) return;
+  show("developing");
+  await Promise.all([fontsReady, sleep(1400)]);
+  if (my !== session) return;
+  const canvas = drawStrip(shots, stripStyle);
+  stripBlob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.9));
+  if (my !== session) return;
+  stripObjUrl = URL.createObjectURL(stripBlob);
+  $("#stripImg").src = stripObjUrl;
+  show("result"); armIdle(); beginUpload(my);
+}
+
+function resetAll() {
+  session++; disarmIdle();
+  $("#emailSheet").hidden = true; $("#email").value = ""; setStatus("");
+  shots = []; stripBlob = null; stripUrl = null; uploadPromise = null;
+  if (stripObjUrl) URL.revokeObjectURL(stripObjUrl); stripObjUrl = null;
+  $("#stripImg").removeAttribute("src");
+  $("#qrCanvas").hidden = true; $("#qrText").innerHTML = "<b>Scan to save</b>Preparing your link…";
+  $("#count").textContent = ""; $("#camError").hidden = true;
+  show("attract");
+}
+
+/* ---------- Upload (Cloudinary, unsigned) ---------- */
+async function uploadToCloud(blob) {
+  const { cloudName, uploadPreset, folder } = CONFIG.cloudinary;
+  const fd = new FormData();
+  fd.append("file", blob, "strip.jpg"); fd.append("upload_preset", uploadPreset);
+  if (folder) fd.append("folder", folder);
+  const r = await withTimeout(fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: fd }), 30000);
+  if (!r.ok) throw Object.assign(new Error("Upload failed (" + r.status + ")"), { permanent: r.status >= 400 && r.status < 500 });
+  return (await r.json()).secure_url;
+}
+function withTimeout(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new TypeError("timeout")), ms))]); }
+function beginUpload(my) {
+  if (!cloudReady()) { $("#qrText").innerHTML = "<b>Scan to save</b>Shows here once photo hosting is set up."; return; }
+  uploadPromise = uploadToCloud(stripBlob)
+    .then((url) => { if (my === session) { stripUrl = url; renderQR(url); } return url; })
+    .catch((e) => { if (my === session) $("#qrText").innerHTML = "<b>No link right now</b>" + (navigator.onLine ? "Use Email or Share instead." : "Phone is offline. Email still works, it sends later."); throw e; });
+  uploadPromise.catch(() => {});
+}
+function renderQR(url) {
+  if (typeof qrcode !== "function") { $("#qrText").innerHTML = "<b>Link ready</b>QR library didn't load."; return; }
+  const q = qrcode(0, "M"); q.addData(url); q.make();
+  const n = q.getModuleCount(), pad = 2, cv = $("#qrCanvas"), size = n + pad * 2;
+  cv.width = size; cv.height = size; const g = cv.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, size, size); g.fillStyle = "#18191d";
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) g.fillRect(c + pad, r + pad, 1, 1);
+  cv.hidden = false;
+  $("#qrText").innerHTML = "<b>Scan to save</b>Point your own phone's camera here to open and keep the strip.";
+}
+
+/* ---------- Outbox (IndexedDB, survives reloads and bad Wi-Fi) ---------- */
+const outbox = (() => {
+  let mem = [], dbp = null;
+  function db() {
+    if (!dbp) dbp = new Promise((res, rej) => {
+      try { const r = indexedDB.open("photobooth", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("outbox", { keyPath: "id" });
+        r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+      } catch (e) { rej(e); }
+    });
+    return dbp;
+  }
+  async function run(mode, fn) {
+    const d = await db();
+    return new Promise((res, rej) => { const t = d.transaction("outbox", mode); const req = fn(t.objectStore("outbox")); t.oncomplete = () => res(req.result); t.onerror = () => rej(t.error); });
+  }
+  return {
+    async put(v) { try { await run("readwrite", (s) => s.put(v)); } catch { mem = mem.filter((x) => x.id !== v.id).concat(v); } },
+    async del(id) { try { await run("readwrite", (s) => s.delete(id)); } catch {} mem = mem.filter((x) => x.id !== id); },
+    async all() { try { return (await run("readonly", (s) => s.getAll())).concat(mem); } catch { return mem.slice(); } },
+  };
+})();
+
+async function sendEmail(to, url) {
+  const accts = emailAccounts(); if (!accts.length) throw Object.assign(new Error("Email isn't set up yet."), { permanent: true });
+  const start = store.get("acct", 0) % accts.length; let last;
+  for (let k = 0; k < accts.length; k++) {
+    const i = (start + k) % accts.length, a = accts[i];
+    const r = await withTimeout(fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ service_id: a.serviceId, template_id: a.templateId, user_id: a.publicKey,
+        template_params: { to_email: to, strip_url: url, download_url: url.replace("/upload/", "/upload/fl_attachment/"),
+          event_name: CONFIG.eventName, event_sub: CONFIG.eventSub, hashtag: CONFIG.hashtag } }),
+    }), 20000);
+    if (r.ok) { store.set("acct", i); return; }
+    last = Object.assign(new Error("EmailJS " + r.status + ": " + (await r.text().catch(() => ""))), { permanent: r.status < 500 });
+  }
+  throw last;
+}
+// Queue rules: an email is tried at most MAX_TRIES times while online (the first tap counts),
+// 90 s apart, and dropped after MAX_AGE. Nothing is tried while the phone is offline. A network error can happen
+// AFTER EmailJS already sent the mail, so unlimited retries would spam the person.
+const QUEUE_V = 2, MAX_TRIES = 2, MAX_AGE = 3 * 3600e3, inFlight = new Set();
+const nextGap = () => 90e3;                                // wait 90 s before the one retry
+async function deliver(item) {
+  if (inFlight.has(item.id)) return;                         // already being sent by another path
+  inFlight.add(item.id);
+  try {
+    if (!item.url) {
+      if (item.session === session && uploadPromise) { try { item.url = await uploadPromise; } catch {} }
+      if (!item.url) item.url = await uploadToCloud(item.blob);
+    }
+    item.tries = (item.tries || 0) + 1;
+    item.nextTry = Date.now() + nextGap(item.tries);
+    await outbox.put(item);                                  // record the try before sending
+    await sendEmail(item.email, item.url);
+    await outbox.del(item.id);
+  } finally { inFlight.delete(item.id); }
+}
+let flushing = false;
+async function flush() {
+  if (flushing || DEMO) return; flushing = true;
+  try {
+    for (const item of await outbox.all()) {
+      const stale = item.v !== QUEUE_V || (item.tries || 0) >= MAX_TRIES || Date.now() - item.created > MAX_AGE;
+      if (stale) { await outbox.del(item.id); continue; }
+      if (!navigator.onLine) break;
+      if (Date.now() < (item.nextTry || 0) || inFlight.has(item.id)) continue;
+      try { await deliver(item); }
+      catch (e) { if (!(e instanceof TypeError)) await outbox.del(item.id); }   // real errors: don't retry
+    }
+  } finally { flushing = false; updateQueueInfo(); }
+}
+async function updateQueueInfo() { const items = await outbox.all(); $("#queueInfo").textContent = "Unsent emails: " + items.length; }
+window.addEventListener("online", flush);
+setInterval(flush, 45000);
+
+/* ---------- Email sheet ---------- */
+function setStatus(msg, cls = "") { const s = $("#emailStatus"); s.textContent = msg; s.className = "status " + cls; }
+$("#chips").innerHTML = CONFIG.emailDomains.map((d) => `<button type="button" class="chip" data-d="${d}">${d}</button>`).join("");
+$("#chips").addEventListener("click", (e) => {
+  const d = e.target.dataset.d; if (!d) return;
+  const inp = $("#email"); inp.value = inp.value.split("@")[0] + d; inp.focus();
+});
+$("#emailBtn").onclick = () => { $("#emailSheet").hidden = false; setStatus(""); $("#emailSend").disabled = false; setTimeout(() => $("#email").focus(), 50); };
+$("#emailCancel").onclick = () => ($("#emailSheet").hidden = true);
+$("#emailSheet").addEventListener("click", (e) => { if (e.target.id === "emailSheet") $("#emailSheet").hidden = true; });
+$("#emailForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("#email").value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { setStatus("That doesn't look like an email address. Check for typos.", "err"); return; }
+  if (!stripBlob) return;
+  $("#emailSend").disabled = true; setStatus("Sending…");
+  if (DEMO) { await sleep(900); setStatus(`Demo mode: nothing was sent. Add your EmailJS and Cloudinary keys to send to ${email}.`, "ok"); $("#email").value = ""; $("#emailSend").disabled = false; return; }
+  const item = { v: QUEUE_V, id: Date.now() + "-" + Math.random().toString(36).slice(2, 7), email, blob: stripBlob, url: stripUrl, session, created: Date.now(), tries: 0 };
+  await outbox.put(item);
+  if (!navigator.onLine) {
+    setStatus("No signal right now. Your strip is saved and will send when the phone is back online.", "ok");
+    $("#email").value = ""; $("#emailSend").disabled = false; updateQueueInfo();
+    setTimeout(() => ($("#emailSheet").hidden = true), 2600); return;
+  }
+  try {
+    await deliver(item);
+    setStatus(`Sent to ${email}. Check spam if it's not there in a minute.`, "ok");
+    $("#email").value = ""; setTimeout(() => ($("#emailSheet").hidden = true), 2200);
+  } catch (err) {
+    if (err instanceof TypeError) { setStatus("No signal right now. Your strip is saved and will send automatically.", "ok"); $("#email").value = ""; setTimeout(() => ($("#emailSheet").hidden = true), 2600); }
+    else { await outbox.del(item.id); setStatus("Couldn't send (" + err.message.slice(0, 80) + "). Try Share or the QR code instead.", "err"); }
+  } finally { $("#emailSend").disabled = false; updateQueueInfo(); }
+});
+
+/* ---------- Share & download ---------- */
+const fileName = () => `${CONFIG.eventName.replace(/\W+/g, "-")}-photostrip-${Date.now().toString().slice(-5)}.jpg`;
+$("#shareBtn").onclick = async () => {
+  if (!stripBlob) return;
+  const file = new File([stripBlob], fileName(), { type: "image/jpeg" });
+  const text = `My ${CONFIG.eventName} photo strip ${CONFIG.hashtag}`;
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; }
+  } catch (e) { if (e.name === "AbortError") return; }
+  if (stripUrl) { location.href = "https://wa.me/?text=" + encodeURIComponent(text + " " + stripUrl); return; }
+  toast("Sharing isn't available in this browser. Use Email or the QR code.");
+};
+$("#downloadBtn").onclick = () => {
+  if (!stripObjUrl) return;
+  const a = document.createElement("a"); a.href = stripObjUrl; a.download = fileName();
+  document.body.appendChild(a); a.click(); a.remove();
+  toast("Saved to this phone. Use Email or the QR code to get it on yours.");
+};
+
+/* ---------- Idle auto-reset on the result screen ---------- */
+let idleT = null, warnI = null;
+function disarmIdle() { clearTimeout(idleT); clearInterval(warnI); $("#resetBar").hidden = true; }
+function armIdle() {
+  disarmIdle();
+  idleT = setTimeout(() => {
+    let n = 10; $("#resetN").textContent = n; $("#resetBar").hidden = false;
+    warnI = setInterval(() => { n--; $("#resetN").textContent = n; if (n <= 0) resetAll(); }, 1000);
+  }, Math.max(5, CONFIG.autoResetSeconds - 10) * 1000);
+}
+["pointerdown", "keydown", "input"].forEach((ev) => document.addEventListener(ev, () => { if (current === "result") armIdle(); }, true));
+
+/* ---------- Buttons ---------- */
+document.querySelectorAll(".pick").forEach((b) => (b.onclick = () => { stripStyle = b.dataset.style; runSession(); }));
+$("#cancelBtn").onclick = resetAll;
+$("#retakeBtn").onclick = () => { resetAll(); runSession(); };
+$("#doneBtn").onclick = resetAll;
+$("#camRetry").onclick = () => { session++; runSession(); };
+$("#camTest").onclick = () => { settings.testPattern = true; store.set("settings", settings); syncAdmin(); session++; runSession(); };
+
+/* ---------- Admin panel (hold the four dots) ---------- */
+let holdT = null;
+const mark = $("#adminMark");
+mark.addEventListener("pointerdown", (e) => { e.stopPropagation(); holdT = setTimeout(openAdmin, 1500); });
+["pointerup", "pointerleave", "pointercancel"].forEach((ev) => mark.addEventListener(ev, () => clearTimeout(holdT)));
+mark.addEventListener("contextmenu", (e) => e.preventDefault());
+function openAdmin() { syncAdmin(); updateQueueInfo(); $("#adminSheet").hidden = false; }
+function syncAdmin() {
+  document.querySelectorAll(".seg").forEach((seg) => {
+    const k = seg.dataset.key;
+    seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === String(settings[k]))));
+  });
+  $("#metaShots").textContent = `${settings.shots} shots · ${settings.countdown} sec timer`;
+  $("#configInfo").textContent = `Hosting: ${cloudReady() ? "on" : "off"} · Email accounts: ${emailAccounts().length}`;
+  $("#demoFlag").hidden = !DEMO;
+}
+document.querySelectorAll(".seg").forEach((seg) => seg.addEventListener("click", (e) => {
+  const v = e.target.dataset.v; if (v == null) return;
+  const k = seg.dataset.key;
+  settings[k] = v === "true" ? true : v === "false" ? false : isNaN(v) ? v : Number(v);
+  store.set("settings", settings); syncAdmin();
+  if (k === "facing" || k === "testPattern") { stopCamera(); startCamera(true); }
+}));
+$("#adminClose").onclick = () => ($("#adminSheet").hidden = true);
+$("#flushBtn").onclick = async () => { await flush(); toast("Outbox checked."); };
+$("#reloadBtn").onclick = () => location.reload();
+$("#fullscreenBtn").onclick = () => { document.documentElement.requestFullscreen?.().catch(() => toast("Fullscreen isn't available here. Add the app to the home screen instead.")); };
+
+/* ---------- Boot ---------- */
+syncAdmin(); renderThumbs(); updateQueueInfo(); flush();
+if (settings.testPattern) startCamera(true);
+else navigator.permissions?.query({ name: "camera" }).then((p) => { if (p.state === "granted") startCamera(true); }).catch(() => {});
+if ("serviceWorker" in navigator && window.isSecureContext && location.protocol !== "blob:") {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
+</script>
+</body>
+</html>
