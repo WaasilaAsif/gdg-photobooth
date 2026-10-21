@@ -343,7 +343,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
         Email it to me
       </button>
-      
       <button class="btn outline" id="downloadBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
         Download
@@ -739,7 +738,7 @@ function beginUpload(my) {
   if (!cloudReady()) { $("#qrText").innerHTML = "<b>Scan to save</b>Shows here once photo hosting is set up."; return; }
   uploadPromise = uploadToCloud(stripBlob)
     .then((url) => { if (my === session) { stripUrl = url; renderQR(url); } return url; })
-    .catch((e) => { if (my === session) $("#qrText").innerHTML = "<b>No link right now</b>" + (navigator.onLine ? "Use Email or Share instead." : "Phone is offline. Email still works, it sends later."); throw e; });
+    .catch((e) => { if (my === session) $("#qrText").innerHTML = "<b>No link right now</b>" + (navigator.onLine ? "Use Email or Download instead." : "Phone is offline. Email still works, it sends later."); throw e; });
   uploadPromise.catch(() => {});
 }
 function renderQR(url) {
@@ -860,22 +859,12 @@ $("#emailForm").addEventListener("submit", async (e) => {
     $("#email").value = ""; setTimeout(() => ($("#emailSheet").hidden = true), 2200);
   } catch (err) {
     if (err instanceof TypeError) { setStatus("No signal right now. Your strip is saved and will send automatically.", "ok"); $("#email").value = ""; setTimeout(() => ($("#emailSheet").hidden = true), 2600); }
-    else { await outbox.del(item.id); setStatus("Couldn't send (" + err.message.slice(0, 80) + "). Try Share or the QR code instead.", "err"); }
+    else { await outbox.del(item.id); setStatus("Couldn't send (" + err.message.slice(0, 80) + "). Try the QR code instead.", "err"); }
   } finally { $("#emailSend").disabled = false; updateQueueInfo(); }
 });
 
-/* ---------- Share & download ---------- */
+/* ---------- Download ---------- */
 const fileName = () => `${CONFIG.eventName.replace(/\W+/g, "-")}-photostrip-${Date.now().toString().slice(-5)}.jpg`;
-$("#shareBtn").onclick = async () => {
-  if (!stripBlob) return;
-  const file = new File([stripBlob], fileName(), { type: "image/jpeg" });
-  const text = `My ${CONFIG.eventName} photo strip ${CONFIG.hashtag}`;
-  try {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; }
-  } catch (e) { if (e.name === "AbortError") return; }
-  if (stripUrl) { location.href = "https://wa.me/?text=" + encodeURIComponent(text + " " + stripUrl); return; }
-  toast("Sharing isn't available in this browser. Use Email or the QR code.");
-};
 $("#downloadBtn").onclick = () => {
   if (!stripObjUrl) return;
   const a = document.createElement("a"); a.href = stripObjUrl; a.download = fileName();
