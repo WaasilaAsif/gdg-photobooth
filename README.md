@@ -179,7 +179,7 @@ Then open `http://localhost:8000`. To test on a phone, deploy it (below), becaus
 
 This is a static site. Any static host with HTTPS works.
 
-### Vercel (recommended)
+<!-- ### Vercel (recommended)
 
 1. Push this repository to GitHub.
 2. Go to [vercel.com](https://vercel.com), sign in with GitHub, then **Add New → Project → Import** this repository.
@@ -192,7 +192,7 @@ This is a static site. Any static host with HTTPS works.
 2. Source: **Deploy from a branch**, Branch: `main`, Folder: `/ (root)` → **Save**.
 3. After a minute or two the site is live at `https://<username>.github.io/<repo>/`.
 
-GitHub Pages is free for public repositories. `vercel.json` is ignored there, which is fine.
+GitHub Pages is free for public repositories. `vercel.json` is ignored there, which is fine. -->
 
 > After changing app files, bump `VERSION` in `sw.js` so installed phones pick up the update.
 
