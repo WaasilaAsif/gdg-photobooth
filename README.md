@@ -214,32 +214,6 @@ To add a new style, add an entry to `STRIP_STYLES`, add a button with a matching
 
 This is a static site. Any static host with HTTPS works.
 
-### Vercel (recommended)
-
-1. Push this repository to GitHub.
-2. Go to [vercel.com](https://vercel.com), sign in with GitHub, then **Add New → Project → Import** this repository.
-3. Framework preset: **Other**. Leave the build command and output directory empty. Click **Deploy**.
-4. Every push to `main` redeploys automatically.
-
-### GitHub Pages
-
-1. In the repository, go to **Settings → Pages**.
-2. Source: **Deploy from a branch**, Branch: `main`, Folder: `/ (root)` → **Save**.
-3. The site goes live at `https://<username>.github.io/<repo>/`. `vercel.json` is ignored there, which is fine.
-
-## Running the booth on event day
-
-**The day before**
-- [ ] Open the live URL on each booth phone. In the browser menu, choose **Add to Home Screen**, then launch from the icon.
-- [ ] Allow camera access once. On iPhone, also set Settings → Safari → Camera → **Allow**.
-- [ ] Take a test strip in each style: confirm the QR code appears and an email arrives.
-- [ ] Do a dry run with three or four people.
-
-**At the booth**
-- [ ] Lock the phone into the app: iPhone **Guided Access** (Settings → Accessibility), Android **App pinning**.
-- [ ] Turn auto-lock off and brightness up, and keep chargers plugged in.
-- [ ] Use a stable hotspot. Emails tapped while offline send automatically when it's back.
-
 **Operator panel.** Hold the four coloured dots on the start screen for 1.5 s.
 
 | Setting | Options |
