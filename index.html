@@ -75,19 +75,20 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
 .top-logo { height: 64px; width: auto; display: block; }
 .picker { display: flex; flex-direction: column; gap: 10px; }
 .pick-label { color: var(--muted); }
-.pick-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.pick-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .pick {
-  display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 96px; padding: 14px 16px;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between;
+  gap: 10px; min-width: 0; min-height: 118px; padding: 12px 12px 14px;
   border-radius: 22px; background: var(--ink); color: var(--on-dark); text-align: left;
   box-shadow: 0 9px 0 -3px var(--blue); animation: nudge 2.4s ease-in-out infinite;
 }
 .pick-blue { background: var(--strip-blue); box-shadow: 0 9px 0 -3px var(--yellow); animation-delay: 1.2s; }
-.pick > svg { width: 26px; height: 26px; flex: none; margin-left: auto; }
+.pick > svg { display: none; width: 26px; height: 26px; flex: none; margin-left: auto; }
 .pick-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pick-text b { font-size: 24px; font-weight: 750; letter-spacing: -.01em; line-height: 1.05; }
+.pick-text b { font-size: 21px; font-weight: 750; letter-spacing: -.01em; line-height: 1.05; }
 .pick-text small { font-size: 13px; opacity: .78; line-height: 1.25; }
 .pick:active { transform: scale(.97); }
-.swatch { width: 30px; height: 66px; flex: none; box-sizing: border-box; border-radius: 4px; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+.swatch { width: 26px; height: 54px; flex: none; box-sizing: border-box; border-radius: 4px; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
 .swatch i { flex: 1; border-radius: 2px; }
 .swatch b { height: 6px; border-radius: 1px; }
 .sw-classic { background: var(--paper); }
@@ -99,7 +100,27 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
 .sw-blue i { background: #fff; }
 .sw-blue b { background: #fff; }
 @keyframes nudge { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
-@media (max-width: 420px) { .pick > svg { display: none; } .pick { padding: 12px; gap: 10px; } .pick-text b { font-size: 21px; } }
+.pick-cards { background: var(--red); box-shadow: 0 9px 0 -3px var(--green); animation-delay: .6s; }
+.sw-cards { background: var(--ink); gap: 3px; }
+.sw-cards i { border: 1.5px solid #fff; border-radius: 3px; }
+.sw-cards i:nth-child(1) { background: #EA4335; } .sw-cards i:nth-child(2) { background: #FBBC04; }
+.sw-cards i:nth-child(3) { background: #34A853; } .sw-cards i:nth-child(4) { background: #4285F4; }
+@media (max-width: 380px) { .pick-text small { display: none; } .pick { min-height: 100px; } }
+
+/* A small hand of cards after "pose." on the start screen */
+.fan { display: inline-block; position: relative; width: 1.05em; height: .78em; margin-left: .18em; vertical-align: -.02em; }
+.fan i {
+  position: absolute; left: .3em; bottom: 0; width: .44em; height: .64em; box-sizing: border-box;
+  border: .045em solid #fff; border-radius: .07em; transform-origin: 50% 120%;
+  box-shadow: 0 .03em .08em rgba(24,25,29,.35); animation: deal .9s cubic-bezier(.2,.8,.2,1) both;
+}
+.fan i::after { content: ""; position: absolute; left: .05em; top: .05em; width: .1em; height: .1em; border-radius: 50%; background: rgba(255,255,255,.85); }
+.fan i:nth-child(1) { background: #EA4335; --r: -27deg; }
+.fan i:nth-child(2) { background: #FBBC04; --r: -9deg;  animation-delay: .08s; }
+.fan i:nth-child(3) { background: #34A853; --r: 9deg;   animation-delay: .16s; }
+.fan i:nth-child(4) { background: #4285F4; --r: 27deg;  animation-delay: .24s; }
+.fan i { transform: rotate(var(--r)); }
+@keyframes deal { from { transform: rotate(0deg) translateY(.2em); opacity: 0 } to { transform: rotate(var(--r)); opacity: 1 } }
 .meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); padding-bottom: 18px; flex-wrap: wrap; }
 
 /* ---------- Booth ---------- */
@@ -235,10 +256,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
     column-gap: 24px; align-items: center; align-content: center;
   }
   .headline { font-size: clamp(44px, 15vh, 84px); }
-  .pick-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  .pick { min-height: 64px; padding: 10px 16px; }
+  .pick-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .pick { flex-direction: row; align-items: center; min-height: 54px; padding: 8px 16px; gap: 12px; }
   .pick > svg { display: block; }
-  .swatch { height: 46px; width: 22px; padding: 3px; gap: 2px; }
+  .pick-text { flex-direction: row; align-items: baseline; gap: 10px; }
+  .pick-text b { font-size: 19px; }
+  .pick-text small { display: inline; }
+  .swatch { height: 38px; width: 18px; padding: 2px; gap: 2px; }
 
   #booth { flex-direction: row; gap: 16px; }
   #booth .hint { display: none; }
@@ -276,7 +300,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
     <span class="dots" id="adminMark" aria-label="Hold for booth settings"><i></i><i></i><i></i><i></i></span>
   </div>
   <div class="attract-body">
-    <h1 class="headline">Strike a<br><span>pose.</span></h1>
+    <h1 class="headline">Strike a<br><span>pose.</span><span class="fan" aria-hidden="true"><i></i><i></i><i></i><i></i></span></h1>
     <div class="mini-vf" id="miniVf">
       <video id="miniVideo" playsinline muted autoplay></video>
       <div class="placeholder mono" id="miniPh">Camera starts when you pick a strip</div>
@@ -286,12 +310,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
       <div class="pick-row">
         <button class="pick" data-style="classic" aria-label="Start with the Classic strip">
           <span class="swatch sw-classic"><i></i><i></i><i></i><b></b></span>
-          <span class="pick-text"><b>Classic</b><small>Cream film strip</small></span>
+          <span class="pick-text"><b>Classic</b><small>Cream film</small></span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
         <button class="pick pick-blue" data-style="blue" aria-label="Start with the Blue strip">
           <span class="swatch sw-blue"><i></i><i></i><i></i><b></b></span>
-          <span class="pick-text"><b>Blue</b><small>Google colour border</small></span>
+          <span class="pick-text"><b>Blue</b><small>Google border</small></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <button class="pick pick-cards" data-style="cards" aria-label="Start with the Wild Card strip">
+          <span class="swatch sw-cards"><i></i><i></i><i></i><i></i></span>
+          <span class="pick-text"><b>Wild Card</b><small>Dealt cards</small></span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </button>
       </div>
@@ -415,7 +444,7 @@ const CONFIG = {
   camera: "user",           // "user" = front camera (people see themselves), "environment" = back camera
   autoResetSeconds: 90,     // result screen returns to start after this much inactivity
   emailDomains: ["@seecs.edu.pk", "@gmail.com", "@nust.edu.pk"],
-  colors: { paper: "#fbf8f1", ink: "#18191d", muted: "#8a8270", sprocket: "#ece5d4", stripBlue: "#185abc",
+  colors: { paper: "#fbf8f1", ink: "#18191d", muted: "#8a8270", sprocket: "#ece5d4", stripBlue: "#185abc", table: "#16171b",
             blue: "#4285F4", red: "#EA4335", yellow: "#FBBC04", green: "#34A853" },
 
   // Free image hosting: Cloudinary unsigned upload (see README). Needed for email + QR.
@@ -424,7 +453,7 @@ const CONFIG = {
   // EmailJS free accounts (200 emails/month each). Add a second account to double the quota;
   // the app falls through to the next one if one fails.
   emailjs: [
-    { publicKey: "D3sY6n1NRcfb17Txf", serviceId: "service_0cezfel", templateId: "template_fo1wymp" },
+    { publicKey: "JBYGI8tvYtSH4eSma", serviceId: "service_bc2zyhb", templateId: "template_evmpzpe" },
   ],
 };
 
@@ -604,15 +633,19 @@ const STRIP_STYLES = {
              head: "muted", title: "ink", sub: "ink", meta: "muted", logoCard: false, sprockets: true, bars: true },
   blue:    { bg: "stripBlue", border: 28, margin: 100, gap: 44, top: 160, headY: 114, mat: 12, radius: 10,
              head: "#d2e3fc", title: "#ffffff", sub: "#e8f0fe", meta: "#c6dafc", logoCard: true, sprockets: false, bars: false },
+  cards:   { bg: "table", border: 0, margin: 84, gap: 42, top: 130, headY: 84, mat: 0, radius: 16,
+             head: "#9aa0a6", title: "#ffffff", sub: "#e8eaed", meta: "#9aa0a6", logoCard: true, sprockets: false, bars: false,
+             cards: true, padX: 46, padY: 74 },
 };
 function drawStrip(imgs, styleName = "classic") {
   const C = CONFIG.colors, S = STRIP_STYLES[styleName] || STRIP_STYLES.classic, n = imgs.length;
   const col = (k) => C[k] || k;
-  const W = 1080, M = S.margin, PW = W - 2 * M, PH = Math.round(PW / ASPECT), GAP = S.gap, TOP = S.top;
+  const W = 1080, M = S.margin, PX = M + (S.padX || 0), PW = W - 2 * PX, PH = Math.round(PW / ASPECT), GAP = S.gap, TOP = S.top;
+  const itemH = PH + 2 * (S.padY || 0);
   const LH = 190, logoW = logoImg ? Math.min(PW - (S.logoCard ? 64 : 0), (logoImg.width / logoImg.height) * LH) : 0;
   const logoH = logoImg ? logoW / (logoImg.width / logoImg.height) : 0;
   const logoBlock = logoImg ? logoH + (S.logoCard ? 48 : 0) + 34 : 70;
-  const photosEnd = TOP + n * PH + (n - 1) * GAP;
+  const photosEnd = TOP + n * itemH + (n - 1) * GAP;
   const H = Math.round(photosEnd + 64 + logoBlock + 230 + S.border + 40);
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const g = c.getContext("2d");
@@ -620,6 +653,11 @@ function drawStrip(imgs, styleName = "classic") {
   const google = [C.blue, C.red, C.yellow, C.green];
 
   g.fillStyle = col(S.bg); g.fillRect(0, 0, W, H);
+  if (S.cards) {   // card-table glow
+    const glow = g.createRadialGradient(W / 2, H * 0.42, 60, W / 2, H * 0.42, H * 0.7);
+    glow.addColorStop(0, "rgba(255,255,255,.07)"); glow.addColorStop(1, "rgba(0,0,0,.25)");
+    g.fillStyle = glow; g.fillRect(0, 0, W, H);
+  }
 
   if (S.bars) google.forEach((cl, i) => { g.fillStyle = cl; g.fillRect((i * W) / 4, 0, W / 4 + 1, 16); g.fillRect((i * W) / 4, H - 16, W / 4 + 1, 16); });
 
@@ -648,10 +686,29 @@ function drawStrip(imgs, styleName = "classic") {
 
   // photos
   imgs.forEach((im, i) => {
-    const y = TOP + i * (PH + GAP);
-    if (S.mat) { g.fillStyle = "#ffffff"; rr(g, M - S.mat, y - S.mat, PW + 2 * S.mat, PH + 2 * S.mat, S.radius + S.mat); g.fill(); }
-    g.save(); rr(g, M, y, PW, PH, S.radius); g.clip();
-    g.drawImage(im, 0, 0, im.width, im.height, M, y, PW, PH);
+    const y0 = TOP + i * (itemH + GAP), y = y0 + (S.padY || 0);
+    if (S.cards) {
+      // each photo is dealt as a playing card: white edge, coloured face, corner numbers
+      const face = google[i % 4], cw = W - 2 * M, cx = W / 2, cy = y0 + itemH / 2;
+      g.save(); g.translate(cx, cy); g.rotate([-1.6, 1.3, -1.1, 1.5][i % 4] * Math.PI / 180); g.translate(-cx, -cy);
+      g.shadowColor = "rgba(0,0,0,.5)"; g.shadowBlur = 30; g.shadowOffsetY = 12;
+      g.fillStyle = "#ffffff"; rr(g, M, y0, cw, itemH, 40); g.fill();
+      g.shadowColor = "transparent";
+      g.fillStyle = face; rr(g, M + 12, y0 + 12, cw - 24, itemH - 24, 30); g.fill();
+      const ink = face === C.yellow ? C.ink : "#ffffff";
+      g.fillStyle = ink; g.font = `italic 800 54px ${DISPLAY}`; g.textAlign = "left"; g.textBaseline = "alphabetic";
+      g.fillText(String(i + 1), M + 36, y0 + 64);
+      g.save(); g.translate(W - M - 36, y0 + itemH - 64); g.rotate(Math.PI); g.fillText(String(i + 1), 0, 0); g.restore();
+      g.save(); rr(g, PX, y, PW, PH, S.radius); g.clip();
+      g.drawImage(im, 0, 0, im.width, im.height, PX, y, PW, PH);
+      g.restore();
+      g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 6; rr(g, PX, y, PW, PH, S.radius); g.stroke();
+      g.restore();
+      return;
+    }
+    if (S.mat) { g.fillStyle = "#ffffff"; rr(g, PX - S.mat, y - S.mat, PW + 2 * S.mat, PH + 2 * S.mat, S.radius + S.mat); g.fill(); }
+    g.save(); rr(g, PX, y, PW, PH, S.radius); g.clip();
+    g.drawImage(im, 0, 0, im.width, im.height, PX, y, PW, PH);
     g.restore();
   });
 
