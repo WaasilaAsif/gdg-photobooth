@@ -121,7 +121,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
 .fan i:nth-child(4) { background: #4285F4; --r: 27deg;  animation-delay: .24s; }
 .fan i { transform: rotate(var(--r)); }
 @keyframes deal { from { transform: rotate(0deg) translateY(.2em); opacity: 0 } to { transform: rotate(var(--r)); opacity: 1 } }
-.meta { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); padding-bottom: 18px; flex-wrap: wrap; }
+.meta { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); padding-bottom: 14px; }
+.sponsor { display: flex; align-items: center; gap: 10px; margin-left: auto; text-align: left; }
+.sponsor img { width: 40px; height: 40px; flex: none; border-radius: 50%; box-shadow: 0 1px 4px rgba(24,25,29,.18); }
+.sponsor-text { display: flex; flex-direction: column; gap: 1px; }
+.sponsor-text small { font-size: 10px; letter-spacing: .14em; }
+.sponsor-text b { font-family: var(--display); font-size: 13px; font-weight: 650; letter-spacing: 0; text-transform: none; color: var(--ink); line-height: 1.2; }
+@media (max-width: 440px) { #metaShots { display: none; } .sponsor { margin-inline: auto; } }
+.dev-sponsor { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 10px 16px 10px 10px; border-radius: 999px; background: var(--paper-2); text-align: left; font-size: 13px; color: var(--muted); line-height: 1.3; }
+.dev-sponsor img { width: 44px; height: 44px; border-radius: 50%; flex: none; }
+.dev-sponsor b { color: var(--ink); font-weight: 650; font-size: 14px; }
 
 /* ---------- Booth ---------- */
 #booth { background: var(--ink); color: var(--on-dark); gap: 14px; align-items: center; justify-content: center; }
@@ -249,7 +258,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
   #attract { gap: 8px; }
   .top { padding-top: 8px; }
   .top-logo { height: 36px; }
-  .meta { padding-bottom: 8px; }
+  .meta { padding-bottom: 6px; }
+  .sponsor img { width: 32px; height: 32px; }
+  .dev-sponsor { margin-top: 6px; }
   .mini-vf { display: none; }
   .attract-body {
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -326,7 +337,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
       </div>
     </div>
   </div>
-  <div class="meta mono"><span id="metaShots">4 shots · 3 sec timer</span><span>Free photo strip</span></div>
+  <div class="meta mono">
+    <span id="metaShots">4 shots · 3 sec timer</span>
+    <span class="sponsor">
+      <img src="brand/sponsor.png" alt="Sana's Kitchen &amp; Baking Academy logo" width="40" height="40">
+      <span class="sponsor-text"><small>Official cake sponsor</small><b>Sana's Kitchen &amp; Baking Academy</b></span>
+    </span>
+  </div>
 </section>
 
 <!-- ===================== BOOTH ===================== -->
@@ -359,6 +376,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
   <div class="loader" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <h2>Developing your strip…</h2>
   <span class="mono" style="color:var(--muted)">Hold tight, two seconds</span>
+  <div class="dev-sponsor">
+    <img src="brand/sponsor.png" alt="" width="44" height="44">
+    <span>Today's cake by<br><b>Sana's Kitchen &amp; Baking Academy</b></span>
+  </div>
 </section>
 
 <!-- ===================== RESULT ===================== -->
@@ -434,10 +455,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
    CONFIG — everything you'll customise lives here.
    ===================================================================== */
 const CONFIG = {
-  eventName: "GDGoC NUST",
+  eventName: "GDGoC NUST 2026",
   eventSub: "Onboarding Orientation",
   eventPlace: "NUST · H-12",
-  hashtag: "#GDGoCNUST",
+  hashtag: "#BaaziPalat",  //Uno reverse
   logo: "brand/logo.png",   // PNG with a transparent background. Empty = four coloured dots instead.
   shots: 4,                 // default photos per strip (3 or 4); operators can change it in the settings panel
   countdown: 3,             // seconds before each photo
@@ -447,7 +468,7 @@ const CONFIG = {
   colors: { paper: "#fbf8f1", ink: "#18191d", muted: "#8a8270", sprocket: "#ece5d4", stripBlue: "#185abc", table: "#16171b",
             blue: "#4285F4", red: "#EA4335", yellow: "#FBBC04", green: "#34A853" },
 
-  // Free image hosting: Cloudinary unsigned upload (see README). Needed for email + QR.
+// Free image hosting: Cloudinary unsigned upload (see README). Needed for email + QR.
   cloudinary: { cloudName: "dnvdtq7qj", uploadPreset: "gdgoc-photobooth", folder: "gdgoc-photobooth" },
 
   // EmailJS free accounts (200 emails/month each). Add a second account to double the quota;
