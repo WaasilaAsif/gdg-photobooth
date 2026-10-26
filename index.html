@@ -59,7 +59,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
 /* ---------- Attract ---------- */
 #attract { gap: 18px; }
 .top { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; }
-.dots { display: flex; gap: 6px; padding: 10px; margin: -10px; }
+.dots { display: flex; gap: 6px; padding: 16px; margin: -16px; cursor: pointer; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .dots i { width: 12px; height: 12px; border-radius: 50%; display: block; }
 .dots i:nth-child(1){background:var(--blue)} .dots i:nth-child(2){background:var(--red)} .dots i:nth-child(3){background:var(--yellow)} .dots i:nth-child(4){background:var(--green)}
 .attract-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 22px; min-height: 0; }
@@ -440,7 +440,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
       <button class="btn outline" id="fullscreenBtn">Fullscreen</button>
       <button class="btn dark" id="reloadBtn">Reload app</button>
     </div>
-    <p class="fine">Hold the four dots on the start screen for 1.5 seconds to open this panel.</p>
+    <p class="fine">To open this panel: hold the four dots on the start screen for 1.5 seconds, or tap them 5 times quickly.</p>
   </div>
 </div>
 
@@ -455,10 +455,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outl
    CONFIG — everything you'll customise lives here.
    ===================================================================== */
 const CONFIG = {
-  eventName: "GDGoC NUST 2026",
+  eventName: "GDGoC NUST",
   eventSub: "Onboarding Orientation",
   eventPlace: "NUST · H-12",
-  hashtag: "#BaaziPalat",  //Uno reverse
+  hashtag: "#GDGoCNUST",
   logo: "brand/logo.png",   // PNG with a transparent background. Empty = four coloured dots instead.
   shots: 4,                 // default photos per strip (3 or 4); operators can change it in the settings panel
   countdown: 3,             // seconds before each photo
@@ -468,6 +468,8 @@ const CONFIG = {
   colors: { paper: "#fbf8f1", ink: "#18191d", muted: "#8a8270", sprocket: "#ece5d4", stripBlue: "#185abc", table: "#16171b",
             blue: "#4285F4", red: "#EA4335", yellow: "#FBBC04", green: "#34A853" },
 
+
+  
 // Free image hosting: Cloudinary unsigned upload (see README). Needed for email + QR.
   cloudinary: { cloudName: "dnvdtq7qj", uploadPreset: "gdgoc-photobooth", folder: "gdgoc-photobooth" },
 
@@ -971,10 +973,18 @@ $("#camRetry").onclick = () => { session++; runSession(); };
 $("#camTest").onclick = () => { settings.testPattern = true; store.set("settings", settings); syncAdmin(); session++; runSession(); };
 
 /* ---------- Admin panel (hold the four dots) ---------- */
-let holdT = null;
+// Opens by holding the dots for 1.5 s, or tapping them 5 times within 2 s.
+// On phones a hold can turn into a scroll or a long-press menu, which cancels the press,
+// so the dots opt out of browser touch gestures (CSS touch-action: none) and a tap fallback exists.
+let holdT = null, taps = [];
 const mark = $("#adminMark");
-mark.addEventListener("pointerdown", (e) => { e.stopPropagation(); holdT = setTimeout(openAdmin, 1500); });
-["pointerup", "pointerleave", "pointercancel"].forEach((ev) => mark.addEventListener(ev, () => clearTimeout(holdT)));
+mark.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); clearTimeout(holdT); holdT = setTimeout(openAdmin, 1500); });
+["pointerup", "pointercancel"].forEach((ev) => mark.addEventListener(ev, () => clearTimeout(holdT)));
+mark.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") clearTimeout(holdT); });
+mark.addEventListener("click", () => {
+  const now = Date.now(); taps = taps.filter((t) => now - t < 2000).concat(now);
+  if (taps.length >= 5) { taps = []; clearTimeout(holdT); openAdmin(); }
+});
 mark.addEventListener("contextmenu", (e) => e.preventDefault());
 function openAdmin() { syncAdmin(); updateQueueInfo(); $("#adminSheet").hidden = false; }
 function syncAdmin() {

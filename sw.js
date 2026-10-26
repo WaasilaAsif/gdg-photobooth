@@ -1,5 +1,5 @@
 // Offline shell for the photobooth. Bump VERSION when you change files.
-const VERSION = "pb-v7";
+const VERSION = "pb-v8";
 const SHELL = ["./", "./index.html", "./qrcode.js", "./brand/logo.png", "./brand/sponsor.png", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
